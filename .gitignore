@@ -1,0 +1,23 @@
+﻿# 数据集
+tea_flower_datasets/
+tea_flower_datasets.zip
+
+# 模型权重和输出
+outputs/
+models/*.pt
+models/*.pth
+*.pth
+*.pt
+
+# IDE
+.idea/
+__pycache__/
+*.pyc
+
+# Excel 临时文件
+~$*
+*.xlsx
+
+# 其他临时文件
+*.tmp
+_gen_export.py

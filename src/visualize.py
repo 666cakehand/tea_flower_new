@@ -1,10 +1,13 @@
-﻿import os
+import os
 import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import seaborn as sns
 import numpy as np
 from .config import FEATURES, RESULT_DIR
+
+plt.rcParams["font.sans-serif"] = ["SimHei", "Microsoft YaHei", "Arial Unicode MS", "sans-serif"]
+plt.rcParams["axes.unicode_minus"] = False
 
 def plot_loss_curves(train_losses, val_losses, output_dir=RESULT_DIR):
     plt.figure(figsize=(10, 6))
@@ -24,7 +27,7 @@ def plot_confusion_matrix(metrics, output_dir=RESULT_DIR):
         cm = metrics[feature]["confusion_matrix"]
         classes = metrics[feature]["classes"]
         plt.figure(figsize=(12, 10))
-        sns.heatmap(cm, annot=True, fmt="d", cmap="Blues", 
+        sns.heatmap(cm, annot=True, fmt="d", cmap="Blues",
                     xticklabels=classes, yticklabels=classes)
         plt.xlabel("预测标签")
         plt.ylabel("真实标签")
@@ -41,16 +44,16 @@ def plot_metrics_bar(metrics, output_dir=RESULT_DIR):
     precisions = [metrics[f]["precision"] for f in features]
     recalls = [metrics[f]["recall"] for f in features]
     f1s = [metrics[f]["f1"] for f in features]
-    
+
     x = np.arange(len(features))
     width = 0.2
-    
+
     plt.figure(figsize=(14, 8))
     plt.bar(x - 1.5*width, accs, width, label="准确率", color="blue")
     plt.bar(x - 0.5*width, precisions, width, label="精确率", color="green")
     plt.bar(x + 0.5*width, recalls, width, label="召回率", color="orange")
     plt.bar(x + 1.5*width, f1s, width, label="F1值", color="red")
-    
+
     plt.xlabel("特征")
     plt.ylabel("分数")
     plt.title("各特征分类指标对比")
@@ -64,14 +67,14 @@ def plot_metrics_bar(metrics, output_dir=RESULT_DIR):
 def plot_feature_accuracy(metrics, output_dir=RESULT_DIR):
     features = FEATURES
     accs = [metrics[f]["accuracy"] * 100 for f in features]
-    
+
     plt.figure(figsize=(10, 6))
     bars = plt.bar(features, accs, color=["#FF6B6B", "#4ECDC4", "#45B7D1", "#96CEB4"])
-    
+
     for bar, acc in zip(bars, accs):
         plt.text(bar.get_x() + bar.get_width()/2, bar.get_height() + 1,
                  f"{acc:.1f}%", ha="center", va="bottom")
-    
+
     plt.xlabel("特征")
     plt.ylabel("准确率 (%)")
     plt.title("各特征分类准确率")

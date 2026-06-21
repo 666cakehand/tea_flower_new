@@ -1,4 +1,4 @@
-﻿import torch
+import torch
 import numpy as np
 from sklearn.metrics import confusion_matrix, accuracy_score, precision_score, recall_score, f1_score
 from .config import FEATURES
@@ -31,12 +31,15 @@ def compute_metrics(all_preds, all_targets, feature_classes):
     for feature in FEATURES:
         preds = np.array(all_preds[feature])
         targets = np.array(all_targets[feature])
-        
+        classes = feature_classes[feature]
+        num_classes = len(classes)
+        labels = list(range(num_classes))
+
         acc = accuracy_score(targets, preds)
-        precision = precision_score(targets, preds, average="weighted", zero_division=0)
-        recall = recall_score(targets, preds, average="weighted", zero_division=0)
-        f1 = f1_score(targets, preds, average="weighted", zero_division=0)
-        cm = confusion_matrix(targets, preds)
+        precision = precision_score(targets, preds, labels=labels, average="weighted", zero_division=0)
+        recall = recall_score(targets, preds, labels=labels, average="weighted", zero_division=0)
+        f1 = f1_score(targets, preds, labels=labels, average="weighted", zero_division=0)
+        cm = confusion_matrix(targets, preds, labels=labels)
         
         metrics[feature] = {
             "accuracy": acc,
@@ -44,7 +47,7 @@ def compute_metrics(all_preds, all_targets, feature_classes):
             "recall": recall,
             "f1": f1,
             "confusion_matrix": cm,
-            "classes": feature_classes[feature],
+            "classes": classes,
         }
     return metrics
 
