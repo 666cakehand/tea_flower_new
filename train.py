@@ -101,6 +101,7 @@ def parse_args():
     parser.add_argument("--weight_decay", type=float, default=None, help="L2 正则化权重衰减系数 (默认使用配置文件值 0.0001)")
     parser.add_argument("--label_smoothing", type=float, default=0.0, help="标签平滑系数 (默认: 0.0，推荐 0.1)")
     parser.add_argument("--aug_level", type=str, default="medium", choices=["light", "medium", "strong", "randaugment"], help="数据增强强度 (默认: medium)")
+    parser.add_argument("--min_samples", type=int, default=1, help="每个标签类别的最少样本数，少于该数目的类别将被过滤 (默认: 1，即不过滤)")
     parser.add_argument("--hidden_dim", type=int, default=512, help="分类头隐藏层维度 (默认: 512)")
     parser.add_argument("--num_layers", type=int, default=1, help="分类头隐藏层数 (默认: 1)")
     parser.add_argument("--dropout", type=float, default=0.5, help="Dropout 比率 (默认: 0.5)")
@@ -144,7 +145,8 @@ def main():
 
     print("\n1. 加载数据...")
     train_loader, val_loader, feature_classes, feature_labels = get_data_loaders(
-        seed=seed, use_merge=args.use_merge, aug_level=args.aug_level)
+        seed=seed, use_merge=args.use_merge, aug_level=args.aug_level,
+        min_samples_per_class=args.min_samples)
     save_class_mappings(feature_classes, feature_labels, RESULT_DIR)
 
     print("\n特征类别统计:")

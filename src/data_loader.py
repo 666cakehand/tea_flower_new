@@ -9,11 +9,13 @@ from .config import IMAGES_DIR, TRAIN_LABELS_DIR, VAL_LABELS_DIR, FEATURES, TRAI
 from .label_merge import merge_label
 
 class TeaFlowerDataset(Dataset):
-    def __init__(self, labels_dir, images_dir, transform=None, feature_labels=None, use_merge=False):
+    def __init__(self, labels_dir, images_dir, transform=None, feature_labels=None,
+                 use_merge=False, min_samples_per_class=1):
         self.labels_dir = labels_dir
         self.images_dir = images_dir
         self.transform = transform
         self.use_merge = use_merge
+        self.min_samples_per_class = min_samples_per_class
         self.data = []
         self.feature_labels = {feature: {} for feature in FEATURES}
         self.feature_classes = {feature: [] for feature in FEATURES}
@@ -39,6 +41,7 @@ class TeaFlowerDataset(Dataset):
                 print(f"Error loading {json_file}: {e}")
 
     def _build_mappings(self):
+        label_counts = {feature: {} for feature in FEATURES}
         for item in self.data:
             label = item["label"]
             for feature in FEATURES:
@@ -48,14 +51,37 @@ class TeaFlowerDataset(Dataset):
                         merged = merge_label(feature, value)
                         if merged:
                             self.original_to_merged[feature][value] = merged
-                            if merged not in self.feature_labels[feature]:
-                                self.feature_labels[feature][merged] = len(self.feature_labels[feature])
+                            label_counts[feature][merged] = label_counts[feature].get(merged, 0) + 1
                     else:
-                        if value not in self.feature_labels[feature]:
-                            self.feature_labels[feature][value] = len(self.feature_labels[feature])
+                        label_counts[feature][value] = label_counts[feature].get(value, 0) + 1
+
         for feature in FEATURES:
-            self.feature_classes[feature] = sorted(self.feature_labels[feature].keys(),
-                                                   key=lambda x: self.feature_labels[feature][x])
+            valid_labels = [l for l, c in label_counts[feature].items()
+                            if c >= self.min_samples_per_class]
+            valid_labels.sort(key=lambda l: -label_counts[feature][l])
+            for idx, label in enumerate(valid_labels):
+                self.feature_labels[feature][label] = idx
+            self.feature_classes[feature] = valid_labels
+
+        valid_data = []
+        for item in self.data:
+            label = item["label"]
+            valid = True
+            for feature in FEATURES:
+                value = label.get(feature, "")
+                if value:
+                    if self.use_merge:
+                        value = merge_label(feature, value)
+                    if value and value not in self.feature_labels[feature]:
+                        valid = False
+                        break
+            if valid:
+                valid_data.append(item)
+
+        skipped = len(self.data) - len(valid_data)
+        if skipped > 0:
+            print(f"  过滤掉 {skipped} 个样本（标签样本数 < {self.min_samples_per_class}）")
+        self.data = valid_data
 
     def _build_classes_from_labels(self):
         for feature in FEATURES:
@@ -174,9 +200,10 @@ def get_transforms(img_size=224, aug_level="medium"):
     ])
     return train_transform, val_transform
 
-def get_data_loaders(seed=None, use_merge=False, aug_level="medium"):
+def get_data_loaders(seed=None, use_merge=False, aug_level="medium", min_samples_per_class=1):
     train_transform, val_transform = get_transforms(TRAIN_PARAMS["img_size"], aug_level=aug_level)
-    train_dataset = TeaFlowerDataset(TRAIN_LABELS_DIR, IMAGES_DIR, train_transform, use_merge=use_merge)
+    train_dataset = TeaFlowerDataset(TRAIN_LABELS_DIR, IMAGES_DIR, train_transform,
+                                     use_merge=use_merge, min_samples_per_class=min_samples_per_class)
     val_dataset = TeaFlowerDataset(VAL_LABELS_DIR, IMAGES_DIR, val_transform,
                                    feature_labels=train_dataset.feature_labels, use_merge=use_merge)
 

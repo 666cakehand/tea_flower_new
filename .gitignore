@@ -1,9 +1,9 @@
-﻿# 数据集
+# 数据集
 tea_flower_datasets/
 tea_flower_datasets.zip
 
-# 模型权重和输出
-outputs/
+# 模型权重
+outputs/checkpoints/
 models/*.pt
 models/*.pth
 *.pth
@@ -11,12 +11,12 @@ models/*.pth
 
 # IDE
 .idea/
+.vscode/
 __pycache__/
 *.pyc
 
 # Excel 临时文件
 ~$*
-*.xlsx
 
 # 其他临时文件
 *.tmp
