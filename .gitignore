@@ -2,12 +2,8 @@
 tea_flower_datasets/
 tea_flower_datasets.zip
 
-# 模型权重
+# 训练过程 checkpoint（最佳模型保留）
 outputs/checkpoints/
-models/*.pt
-models/*.pth
-*.pth
-*.pt
 
 # IDE
 .idea/
