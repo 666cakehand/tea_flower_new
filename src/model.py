@@ -1,4 +1,4 @@
-import os
+﻿import os
 import random
 import numpy as np
 import torch
@@ -82,7 +82,9 @@ def build_model(feature_classes, hidden_dim=512, num_layers=1, dropout=0.5, use_
     model = model.to(device)
     return model, device
 
-def get_loss_fn(label_smoothing=0.0):
+def get_loss_fn(label_smoothing=0.0, class_weights=None):
+    if class_weights is not None:
+        return nn.CrossEntropyLoss(label_smoothing=label_smoothing, weight=class_weights)
     return nn.CrossEntropyLoss(label_smoothing=label_smoothing)
 
 def get_optimizer(model, lr=TRAIN_PARAMS["lr"], finetune_lr=None, weight_decay=TRAIN_PARAMS["weight_decay"],

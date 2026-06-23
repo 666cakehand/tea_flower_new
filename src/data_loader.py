@@ -20,12 +20,14 @@ class TeaFlowerDataset(Dataset):
         self.feature_labels = {feature: {} for feature in FEATURES}
         self.feature_classes = {feature: [] for feature in FEATURES}
         self.original_to_merged = {feature: {} for feature in FEATURES}
+        self.class_weights = {feature: None for feature in FEATURES}
         self._load_data()
         if feature_labels is not None:
             self.feature_labels = feature_labels
             self._build_classes_from_labels()
         else:
             self._build_mappings()
+        self._compute_class_weights()
 
     def _load_data(self):
         json_files = glob.glob(os.path.join(self.labels_dir, "*.json"))
@@ -108,6 +110,27 @@ class TeaFlowerDataset(Dataset):
 
     def __len__(self):
         return len(self.data)
+
+    def _compute_class_weights(self):
+        import torch
+        for feature in FEATURES:
+            class_counts = torch.zeros(len(self.feature_classes[feature]))
+            for item in self.data:
+                label = item["label"]
+                value = label.get(feature, "")
+                if self.use_merge and value:
+                    value = merge_label(feature, value)
+                if value in self.feature_labels[feature]:
+                    class_idx = self.feature_labels[feature][value]
+                    class_counts[class_idx] += 1
+            
+            total_samples = class_counts.sum()
+            if total_samples > 0:
+                class_weights = total_samples / (len(class_counts) * class_counts)
+                class_weights = class_weights / class_weights.sum() * len(class_counts)
+                self.class_weights[feature] = class_weights
+            else:
+                self.class_weights[feature] = None
 
     def __getitem__(self, idx):
         item = self.data[idx]
@@ -215,6 +238,7 @@ def get_data_loaders(seed=None, use_merge=False, aug_level="medium", min_samples
         shuffle=True,
         num_workers=TRAIN_PARAMS["num_workers"],
         pin_memory=True,
+        drop_last=True,  # 丢弃最后一个不完整的batch，避免BatchNorm报错
     )
     val_loader = DataLoader(
         val_dataset,
@@ -223,7 +247,7 @@ def get_data_loaders(seed=None, use_merge=False, aug_level="medium", min_samples
         num_workers=TRAIN_PARAMS["num_workers"],
         pin_memory=True,
     )
-    return train_loader, val_loader, train_dataset.feature_classes, train_dataset.feature_labels
+    return train_loader, val_loader, train_dataset.feature_classes, train_dataset.feature_labels, train_dataset.class_weights
 
 def save_class_mappings(feature_classes, feature_labels, output_dir):
     mapping = {
